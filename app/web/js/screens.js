@@ -12,7 +12,7 @@ function go(name, back) {
   }
   show(name, back);
 }
-function goBack(fallback) { if (history.length > 1 && document.referrer !== undefined && history.state !== "root") history.back(); else go(fallback || "home", true); }
+function goBack(fallback) { if (history.length > 1 && history.state !== "root") history.back(); else go(fallback || "home", true); }
 function show(name, back) {
   const [base, arg] = name.split("/");
   const def = SCREENS[base] || SCREENS.home;
@@ -336,7 +336,7 @@ function roomsView(redraw) {
   const shared = rt && ready ? prefsFor(MapUI.sel[0]) : MapUI.global;
   const setShared = p => {
     if (rt) { const q = sendable(p); MapUI.sel.forEach(id => { MapUI.roomPrefs[id] = Object.assign({}, q); }); }
-    else MapUI.global = Object.assign(p, { _set: true });
+    else MapUI.global = p;
     redraw();
   };
   return h("div", {},
@@ -769,7 +769,6 @@ function displayTab() {
     key("Vacuum", "#bfe3cf", "#3e9a6a", "line"), key("Mop Only", "#cfe2fb", "#2f7de0", "line"), key("Vac & Mop", "#d2eef3", "#2b8fa3", "line"),
     key("Keep Out Zone", "var(--keepout)", "var(--keepout-line)", "box"), key("No-Mop Zone", "var(--nomop)", "var(--nomop-line)", "box"),
     key("Temporary obstacles", "", "", "img"));
-  k.querySelectorAll(".swatch.line").forEach(s => { s.style.setProperty("--l", s.style.getPropertyValue("--l")); });
   return k;
 }
 
@@ -920,6 +919,12 @@ SCREENS.robot = { uses: ["status"], render() {
 function li(label, fn, meta, right) {
   return h("div", { class: "li tap", on: { click: fn } }, h("div", { class: "grow" }, label, meta ? h("div", { class: "meta" }, meta) : null), right || chevron());
 }
+function robotNameRow() {
+  return li("Robot Name", async () => {
+    const n = await askText({ title: "Robot name", value: robotName() });
+    if (n && n !== robotName()) api("set_setting", { key: "name", value: n });
+  }, robotName());
+}
 
 // Robot Settings, laid out like the official list. Each row shows only when
 // the robot reports that setting. Values come from the robot's settings
@@ -1029,10 +1034,7 @@ SCREENS.settings = { uses: ["settings", "dnd", "map"], render() {
     const sections = [];
     for (const name of ["Cleaning", "Dock", "Robot"]) {
       const rows = SETTING_ROWS.filter(r => r[0] === name).map(settingRow).filter(Boolean);
-      if (name === "Robot") rows.unshift(li("Robot Name", async () => {
-        const n = await askText({ title: "Robot name", value: robotName() });
-        if (n && n !== robotName()) api("set_setting", { key: "name", value: n });
-      }, robotName()));
+      if (name === "Robot") rows.unshift(robotNameRow());
       if (rows.length) sections.push(h("div", { class: "sect" }, name), h("div", { class: "list" }, rows));
     }
     el.replaceChildren(topbar("Robot Settings", { center: true }), sections,
@@ -1248,7 +1250,7 @@ SCREENS.history = { uses: ["history"], render() {
         .map(([l, v]) => h("div", {}, h("b", {}, v), h("span", {}, l))));
     el.replaceChildren(topbar("History"), items.length ? totals : null,
       h("div", { class: "list" }, items.length ? items.map(m => {
-        const t = m.start_time ? new Date(m.start_time * (m.start_time < 1e12 ? 1000 : 1)) : null;
+        const t = unixDate(m.start_time);
         const bits = [];
         if (m.duration_m != null) bits.push(m.duration_m + " min");
         if (m.square_feet_covered != null) bits.push(m.square_feet_covered + " sq ft");
@@ -1376,10 +1378,7 @@ SCREENS.about = { uses: ["about", "status"], render() {
     const dock = st.dock || {};
     el.replaceChildren(topbar("About Robot", { center: true }),
       h("div", { class: "list" },
-        li("Robot Name", async () => {
-          const n = await askText({ title: "Robot name", value: robotName() });
-          if (n && n !== robotName()) api("set_setting", { key: "name", value: n });
-        }, robotName()),
+        robotNameRow(),
         row("Model", modelName(a)),
         row("SKU", a.sku || st.sku),
         row("Serial Number", ser.serial_number),
@@ -1441,16 +1440,15 @@ SCREENS.messages = { uses: ["notifications"], render() {
 // One clean, like the official Details page: how it started, the rooms it
 // did (with area), bin emptying, and anything that went wrong.
 function historyDetail(m) {
-  const sec = x => x ? new Date(x * (x < 1e12 ? 1000 : 1)) : null;
-  const t = sec(m.start_time), cmd = m.command || {};
+  const t = unixDate(m.start_time), cmd = m.command || {};
   const how = { localApp: "App", schedule: "Scheduled", manual: "Robot button", rmtApp: "App", admin: "iRobot", localSchedule: "Scheduled" }[cmd.initiator] || cmd.initiator;
   const views = (S.sections.map && S.sections.map.views) || {}, map = views[cmd.map_id] || null;
   const fmt = d => d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
   const row = (label, value) => value != null && value !== "" ? h("div", { class: "li" }, h("div", { class: "grow" }, label), h("span", { class: "muted" }, String(value))) : null;
   const events = (m.events || []).map(e => {
-    if (e.room) return h("div", { class: "li" }, h("div", { class: "grow" }, roomNameOf(map, e.room), h("div", { class: "meta" }, e.area ? e.area + " sq ft" : "")), h("span", { class: "muted" }, fmt(sec(e.start))));
-    if (e.error) return h("div", { class: "li" }, h("div", { class: "grow" }, "Problem (error " + e.error + ")"), h("span", { class: "muted" }, fmt(sec(e.start))));
-    if (e.evac) return h("div", { class: "li" }, h("div", { class: "grow" }, "Emptied the bin"), h("span", { class: "muted" }, fmt(sec(e.start))));
+    if (e.room) return h("div", { class: "li" }, h("div", { class: "grow" }, roomNameOf(map, e.room), h("div", { class: "meta" }, e.area ? e.area + " sq ft" : "")), h("span", { class: "muted" }, fmt(unixDate(e.start))));
+    if (e.error) return h("div", { class: "li" }, h("div", { class: "grow" }, "Problem (error " + e.error + ")"), h("span", { class: "muted" }, fmt(unixDate(e.start))));
+    if (e.evac) return h("div", { class: "li" }, h("div", { class: "grow" }, "Emptied the bin"), h("span", { class: "muted" }, fmt(unixDate(e.start))));
     return null;
   }).filter(Boolean);
   openSheet((body, done) => body.append(
@@ -1490,18 +1488,15 @@ SCREENS.account = { render() {
 } };
 
 // =====================================================================
-// Placeholders for parts of the official app this one doesn't do yet
+// Placeholder tabs for parts of the official app this one doesn't do yet
 const SOON = {
   automations: ["Automations", "Schedules live under Routines for now. Automations are coming later.", "order_schedule_empty"],
   support: ["Support", "For help with your Roomba, use iRobot's support site or the iRobot app.", "device_list_support_icon"],
   store: ["Store", "The store isn't part of this app.", "device_list_store_icon"],
-  health: ["Robot Health", "Parts and maintenance are coming later.", "device_setting_consumables_setting"],
-  started: ["Getting Started", "Setup guides live in the iRobot app.", "device_list_product_details"],
 };
-for (const key of ["automations", "support", "store"]) {
-  SCREENS[key] = { nav: true, render() { const [t, text, pic] = SOON[key]; return h("div", { class: "screen" }, h("div", { class: "topbar" }, h("h1", {}, t)), soon(t, text, pic)); } };
+for (const [key, [t, text, pic]] of Object.entries(SOON)) {
+  SCREENS[key] = { nav: true, render() { return h("div", { class: "screen" }, h("div", { class: "topbar" }, h("h1", {}, t)), soon(t, text, pic)); } };
 }
-SCREENS.soon = { render(arg) { const [t, text, pic] = SOON[arg] || ["Coming later", "", null]; return h("div", { class: "screen plain" }, topbar(t, { center: true }), soon(t, text, pic)); } };
 
 // =====================================================================
 // Start-up: show what the server already has, then keep it fresh.

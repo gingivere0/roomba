@@ -38,7 +38,6 @@ img { display: block; }
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
 .ico { width: 17px; height: 17px; object-fit: contain; flex: none; }
-.ico.sm { width: 13px; height: 13px; }
 .ico.lg { width: 21px; height: 21px; }
 
 /* ---------- screens */
@@ -178,17 +177,6 @@ img { display: block; }
 
 /* progress */
 .ptitle { font-size: 22px; font-weight: 600; margin: 5px 0 4px; letter-spacing: .03em; }
-.ptime { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 14px; letter-spacing: .03em; }
-.timeline { background: #f2f2f1; border-radius: 15px; padding: 17px 17px 17px 13px; margin-top: 17px; }
-.tl { display: grid; grid-template-columns: 24px 1fr auto; column-gap: 12px; position: relative; min-height: 46px; }
-.tl::before { content: ""; position: absolute; left: 11px; top: 13px; bottom: -6px; width: 1.5px; background: #888; }
-.tl:last-child::before { display: none; }
-.tl .dot { width: 9px; height: 9px; border: 3px solid #111; border-radius: 50%; margin: 4px auto 0; background: #f2f2f1; position: relative; z-index: 1; }
-.tl.room .dot { width: 20px; height: 20px; margin-top: 0; }
-.tl.room.done .dot { background: var(--green); border-color: var(--green); }
-.tl b { font-size: 14px; font-weight: 600; letter-spacing: .03em; }
-.tl .sub { grid-column: 2 / 4; color: #555; font-size: 12px; letter-spacing: .03em; margin: 3px 0 12px; }
-.tl .t { color: #555; font-size: 11px; letter-spacing: .04em; }
 
 /* lists */
 .list { background: #fff; border-radius: 12px; padding: 4px 0; margin-bottom: 12px; border: 1px solid var(--line); }
@@ -284,12 +272,10 @@ img { display: block; }
 .m-nomop { fill: var(--nomop); fill-opacity: .75; stroke: var(--nomop-line); }
 .m-wallline { stroke: var(--keepout-line); fill: none; stroke-linecap: round; }
 .m-zone.editing { cursor: move; }
-.m-zone.selz { stroke-dasharray: none; }
 .m-handle { fill: var(--green); stroke: #fff; cursor: nwse-resize; }
 .m-frame { fill: none; stroke: var(--green); stroke-dasharray: 6 5; pointer-events: none; }
 .m-size { font-weight: 600; fill: #555; text-anchor: middle; pointer-events: none; }
 .m-spot { fill: rgba(196,226,209,.85); stroke: var(--mint-line); cursor: move; }
-.m-spotframe { fill: none; stroke: var(--mint-line); stroke-dasharray: 8 6; pointer-events: none; }
 .m-draft { fill: var(--green); }
 .m-split { stroke: var(--green); stroke-dasharray: 8 6; }
 svg text { letter-spacing: 0; }

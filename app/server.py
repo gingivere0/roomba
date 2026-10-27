@@ -54,16 +54,21 @@ WEB = HERE / "web"
 # Photos from the phone land here (C:\Users\...\roomba\photos) for Claude to read.
 PHOTOS = HERE.parent / "photos"
 PHOTO_MAX = 12 * 1024 * 1024
-# The code the app watches for updates (see watch_code), and the exit code
-# that tells roomba_app.bat to start it again.
-CODE_FILES = lambda: sorted(HERE.glob("*.py")) + [HERE.parent / "roomba_login.py"]  # noqa: E731
+# The exit code that tells roomba_app.bat to start the app again (see watch_code).
 RESTART_EXIT = 3
 RESTART = {"wanted": False}
+TOKEN_HEADER = "X-Roomba-Token"
+
+
+def code_files() -> list[Path]:
+    """The code the app watches for updates: its own modules and the login
+    module they share."""
+    return sorted(HERE.glob("*.py")) + [HERE.parent / "roomba_login.py"]
 
 
 def code_stamps() -> dict[str, tuple[float, int]]:
     out = {}
-    for f in CODE_FILES():
+    for f in code_files():
         try:
             st = f.stat()
             out[f.name] = (st.st_mtime, st.st_size)
@@ -73,7 +78,7 @@ def code_stamps() -> dict[str, tuple[float, int]]:
 
 
 def compile_problem() -> str | None:
-    for f in CODE_FILES():
+    for f in code_files():
         try:
             compile(f.read_text(encoding="utf-8"), str(f), "exec")
         except FileNotFoundError:
@@ -81,6 +86,8 @@ def compile_problem() -> str | None:
         except (SyntaxError, ValueError, OSError) as err:
             return f"{f.name}: {err}"
     return None
+
+
 DEFAULTS = {
     "stay_logged_in": True,
     "lan": True,
@@ -135,7 +142,7 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
 
     async def read(names: list[str], body: dict[str, Any]) -> None:
         mqtt = any(READERS[n][1] for n in names)
-        sections, errors = await link.run(lambda r: read_sections(r, names, body, [True]), mqtt=mqtt)
+        sections, errors = await link.run(lambda r: read_sections(r, names, body), mqtt=mqtt)
         remember(sections, errors)
         push({"type": "sections", "sections": sections})
 
@@ -302,7 +309,7 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
                     # A clean just ended: part wear (the Home care card) and history moved on.
                     await read(["parts", "history"], {})
             except ActionError as err:
-                push({"type": "offline", "message": str(err)})
+                print(f"status refresh: {err}")
             # The robot can report changes many times a second while cleaning;
             # read at most once every couple of seconds.
             await asyncio.sleep(2)
@@ -354,6 +361,11 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
 
     def token_ok(supplied: str) -> bool:
         return hmac.compare_digest(supplied.encode(), token.encode())
+
+    def require_token(request: web.Request) -> None:
+        """Every API call must send back the page's secret."""
+        if not token_ok(request.headers.get(TOKEN_HEADER, "")):
+            raise web.HTTPForbidden(text="Missing or wrong token. Reload the page.")
 
     async def index(request: web.Request) -> web.Response:
         # On this PC the page is open; from elsewhere it needs the secret link.
@@ -412,8 +424,7 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
         return resp
 
     async def api(request: web.Request) -> web.Response:
-        if not token_ok(request.headers.get("X-Roomba-Token", "")):
-            raise web.HTTPForbidden(text="Missing or wrong token. Reload the page.")
+        require_token(request)
         action = request.match_info["action"]
         if action == "client_error":
             # The page hit a script error; keep the details for fixing it.
@@ -457,7 +468,8 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
             body = {}
 
         if action in READERS:
-            async def handler(r, b):
+            # Asking for a section by name just re-reads it.
+            async def handler(robot, body):
                 return "Loaded."
             mqtt, refresh = READERS[action][1], [action]
         else:
@@ -465,9 +477,9 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
             refresh = REFRESH.get(action, [])
         mqtt = mqtt or any(READERS[n][1] for n in refresh)
 
-        async def job(r):
-            result = await handler(r, body)
-            sections, errors = await read_sections(r, refresh, body, [True])
+        async def job(robot):
+            result = await handler(robot, body)
+            sections, errors = await read_sections(robot, refresh, body)
             return result, sections, errors
 
         try:
@@ -487,8 +499,7 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
     async def photo(request: web.Request) -> web.Response:
         # A photo from the phone, saved for Claude to read (no API key, so it
         # can't go to Claude directly). Each photo gets a .json note beside it.
-        if not token_ok(request.headers.get("X-Roomba-Token", "")):
-            raise web.HTTPForbidden(text="Missing or wrong token. Reload the page.")
+        require_token(request)
         data = bytearray()
         async for chunk in request.content.iter_chunked(64 * 1024):
             data += chunk
@@ -507,7 +518,7 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
         info = {"file": f"{name}.jpg", "time": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "note": q.get("note", "")[:500], "map_id": map_id,
                 "map_name": (views.get(map_id) or {}).get("name", ""),
-                "width": int(q.get("w", 0) or 0), "height": int(q.get("h", 0) or 0),
+                "width": int_or_zero(q.get("w")), "height": int_or_zero(q.get("h")),
                 "status": "new"}
         try:
             PHOTOS.mkdir(exist_ok=True)
@@ -582,6 +593,13 @@ def make_app(link: RobotLink, token: str, settings: dict[str, Any], preload: boo
     return app
 
 
+def int_or_zero(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def lan_address() -> str:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         try:
@@ -594,7 +612,9 @@ def lan_address() -> str:
 def tailscale_addresses() -> list[str]:
     """This PC's Tailscale name (MagicDNS) and IP, if Tailscale is running."""
     found: list[str] = []
-    exe = shutil.which("tailscale") or next((p for p in (r"C:\Program Files\Tailscale\tailscale.exe",) if Path(p).exists()), None)
+    exe = shutil.which("tailscale")
+    if not exe and Path(r"C:\Program Files\Tailscale\tailscale.exe").exists():
+        exe = r"C:\Program Files\Tailscale\tailscale.exe"
     if exe:
         try:
             out = subprocess.run([exe, "status", "--json", "--self", "--peers=false"], capture_output=True, text=True, timeout=5)
@@ -670,6 +690,7 @@ def main() -> int:
         print("Keep these links private; anyone who can reach this PC with one can use the app."
               + (" They stay the same between runs (--new-key replaces them)." if kept else ""))
     print("Press Ctrl+C to quit.\n")
+
     async def serve() -> None:
         runner = web.AppRunner(app, access_log=None)
         await runner.setup()

@@ -6,12 +6,11 @@ to find the spot in atlas\\atlas.json, checks the answer against the real map
 (inside a room, not in a keep-out zone), then sends the spot through the
 running app. Progress goes into the photo's .json "status":
 thinking -> sent | found | unsure | error
-(found = located but not sent, when settings.json photo_spot.auto_send is false). Claude only gets the Read tool here; this
-script does the sending.
+(found = located but not sent, when settings.json photo_spot.auto_send is
+false). Claude only gets the Read tool here; this script does the sending.
 
-    photo_spot.bat photos\\photo-20261021-195500.json
+    .venv\\Scripts\\python.exe photo_spot.py photos\\photo-20261021-195500.json
 """
-from __future__ import annotations
 
 import json
 import os
@@ -119,8 +118,9 @@ def ask_claude(prompt: str, cfg: dict) -> dict:
     cmd = [exe, "-p", "--output-format", "json",
            "--allowedTools", "Read",
            "--disallowedTools", "Bash", "PowerShell", "Edit", "Write", "NotebookEdit", "WebFetch", "WebSearch"]
-    if cfg.get("model", "sonnet"):
-        cmd += ["--model", cfg.get("model", "sonnet")]
+    model = cfg.get("model", "sonnet")   # "" or null in settings.json means Claude Code's default
+    if model:
+        cmd += ["--model", model]
     run = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True, encoding="utf-8",
                          timeout=int(cfg.get("timeout", 240)), input=prompt)  # stdin: cmd.exe would mangle a multi-line argument
     if run.returncode != 0:

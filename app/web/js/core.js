@@ -155,7 +155,6 @@ function liveUpdates() {
     es.onmessage = e => {
       let ev; try { ev = JSON.parse(e.data); } catch (err) { return; }
       if (ev.type === "sections") applySections(ev.sections);
-      if (ev.type === "offline") S.offline = ev.message;
       if (ev.type === "trail") addTrail(ev);
       if (ev.type === "livemap") addLiveMap(ev);
       if (ev.type === "restarting") toast("The app on your PC is updating. Back in a moment...");
@@ -203,11 +202,12 @@ function historyFor(mapId) {
   if (!mapId || !hist.some(mapOf)) return hist;
   return hist.filter(e => mapOf(e) === mapId);
 }
+// iRobot's timestamps are sometimes seconds and sometimes milliseconds.
+function unixDate(t) { return t ? new Date(t * (t < 1e12 ? 1000 : 1)) : null; }
 function lastCleanText(mapId) {
   const hist = historyFor(mapId);
-  const t = hist.length && hist[0].start_time;
-  if (!t) return "No cleans yet";
-  const d = new Date(t * (t < 1e12 ? 1000 : 1)), today = new Date();
+  const d = unixDate(hist.length && hist[0].start_time), today = new Date();
+  if (!d) return "No cleans yet";
   const days = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 864e5);
   if (days <= 0) return "Cleaned Today";
   if (days === 1) return "Cleaned Yesterday";

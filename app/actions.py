@@ -4,29 +4,20 @@ Each handler takes a connected-or-not PrimeRobot and the JSON body the page
 sent, and returns either a short message (actions) or data (readers). The
 server (server.py) decides how the robot is logged in; these don't care.
 
-Copied from roomba_web.py on 2026-10-21 and extended for the Roomba Home
-style app: per-room cleaning preferences (mode, suction, liquid, passes,
-SmartScrub), spot clean, and skip.
+The tables at the bottom (ACTIONS, READERS, and REFRESH) are what the server
+routes requests through.
 """
 
 import asyncio
 import dataclasses
 import json
 import math
-import sys
 from pathlib import Path
 from typing import Any
 
 import aiohttp
-from aiohttp import web
 
-from roombapy_prime import (
-    AuthCredentialsError,
-    AuthError,
-    AuthRateLimitedError,
-    CloudError,
-    PrimeFactory,
-)
+from roombapy_prime import CloudError
 from roombapy_prime.models.favorites import FavoriteV1
 from roombapy_prime.models.geometry import LineString, Polygon
 from roombapy_prime.models.map_bundle import CleanScoreResponse, PolicyZoneFeature, RoomFeature, parse_map_bundle
@@ -47,13 +38,7 @@ from roombapy_prime.models.map_editing import (
     VirtualWallRectangleV1,
     policy_zones_to_virtual_walls,
 )
-from roombapy_prime.models.mission_control import (
-    CommandParams,
-    MissionCommandType,
-    Region,
-    RegionType,
-    RoutineCommand,
-)
+from roombapy_prime.models.mission_control import MissionCommandType, RoutineCommand
 from roombapy_prime.models.mission_history import parse_mission_history
 from roombapy_prime.models.robot_info import parse_active_map_versions
 from roombapy_prime.models.schedules_dnd import (
@@ -417,14 +402,17 @@ async def clean_scores(robot, map_id: str) -> tuple[dict[str, float], float | No
     return scores, (min(ranges) if ranges else None)
 
 
-async def apply_edit(robot, map_id: str, command, done: str) -> str:
-    result = await robot.edit_map_checked(map_id, command)
+async def apply_edit(robot, map_id: str, command, done: str, *, v2: bool = False) -> str:
+    """Sends one map edit and turns the result into a message. Rooms and zones
+    use the original editing API; clean zones, carpets, and furniture use v2."""
+    if v2:
+        result = await robot.edit_map_v2_checked(map_id, command)
+    else:
+        result = await robot.edit_map_checked(map_id, command)
     if result.is_error:
         reason = result.error.name if result.error else (result.error_message or f"code {result.error_code}")
         raise ActionError(f"iRobot rejected the edit: {reason}")
-    if result.is_partial:
-        return done + " The map picture may take a while to catch up."
-    return done
+    return done + (" The map picture may take a while to catch up." if result.is_partial else "")
 
 
 async def edit(robot, action: str, body: dict[str, Any]) -> str:
@@ -456,8 +444,8 @@ async def edit(robot, action: str, body: dict[str, Any]) -> str:
 
     # Zones: the robot keeps keep-out zones, no-mop zones, and virtual walls
     # in ONE list that every write replaces, so read the current list, change
-    # it, and send all of it back. Sending only the new zone would erase the
-    # rest.
+    # it, and send all of it back. Sending only the changed zones would erase
+    # the rest.
     bundle = await load_bundle(robot, m)
     walls = policy_zones_to_virtual_walls(policy_zones(bundle))
     raw = [f for f in features(bundle, "policyZones")
@@ -467,62 +455,34 @@ async def edit(robot, action: str, body: dict[str, Any]) -> str:
         # without it would delete it from the robot. Refuse instead.
         raise ActionError("The map has a zone this app can't read, so it won't risk rewriting the "
                           "zone list. Edit zones in the iRobot app instead.")
-    if action == "zone_add":
-        pts = [(float(x), float(y)) for x, y in body.get("points", [])]
+    if action != "zones_set":
+        raise ActionError("Unknown edit.")
+    # The zone editor sends the whole list it wants: existing zones by id
+    # (with new corners if they were moved) and new ones without an id.
+    # Virtual-wall lines aren't shown in the editor and are kept as-is.
+    wanted = body.get("zones")
+    if not isinstance(wanted, list) or len(wanted) > 50:
+        raise ActionError("The zone list didn't come through. Try again.")
+    zone_types = (VirtualWallRectangleV1, VirtualWallNoMopZoneV1)
+    by_id = {str(w.wall_id): w for w in walls if isinstance(w, zone_types)}
+    result = [w for w in walls if not isinstance(w, zone_types)]
+    numeric = [int(w.wall_id) for w in walls if str(w.wall_id).isdigit()]
+    next_id = max(numeric, default=0) + 1
+    for z in wanted:
+        zid = str(z.get("id")) if z.get("id") is not None else None
+        old = by_id.get(zid) if zid else None
+        if old is not None and not z.get("points"):
+            result.append(old)
+            continue
+        pts = [(float(x), float(y)) for x, y in (z.get("points") or [])]
         if len(pts) != 4:
-            raise ActionError("A zone needs four corners.")
-        numeric = [int(w.wall_id) for w in walls if str(w.wall_id).isdigit()]
-        new_id = str(max(numeric, default=0) + 1)
+            raise ActionError("Every zone needs four corners.")
+        if old is None:
+            zid, next_id = str(next_id), next_id + 1
         polygon = Polygon(coordinates=[pts + [pts[0]]])
-        if body.get("kind") == "nomop":
-            walls.append(VirtualWallNoMopZoneV1(wall_id=new_id, polygon=polygon))
-            label = "no-mop zone"
-        else:
-            walls.append(VirtualWallRectangleV1(wall_id=new_id, polygon=polygon))
-            label = "keep-out zone"
-        return await apply_edit(robot, m.p2map_id, SetVirtualWallsV1(walls=walls), f"Added the {label}.")
-    if action == "zone_remove":
-        zone_id = str(body.get("zone_id"))
-        kept = [w for w in walls if str(w.wall_id) != zone_id]
-        if len(kept) == len(walls):
-            raise ActionError("That zone is already gone. Reload the map.")
-        return await apply_edit(robot, m.p2map_id, SetVirtualWallsV1(walls=kept), "Removed the zone.")
-    if action == "zones_set":
-        # The zone editor sends the whole list it wants: existing zones by id
-        # (with new corners if they were moved) and new ones without an id.
-        # Virtual-wall lines aren't shown in the editor and are kept as-is.
-        wanted = body.get("zones")
-        if not isinstance(wanted, list) or len(wanted) > 50:
-            raise ActionError("The zone list didn't come through. Try again.")
-        zone_types = (VirtualWallRectangleV1, VirtualWallNoMopZoneV1)
-        by_id = {str(w.wall_id): w for w in walls if isinstance(w, zone_types)}
-        result = [w for w in walls if not isinstance(w, zone_types)]
-        numeric = [int(w.wall_id) for w in walls if str(w.wall_id).isdigit()]
-        next_id = max(numeric, default=0) + 1
-        for z in wanted:
-            zid = str(z.get("id")) if z.get("id") is not None else None
-            old = by_id.get(zid) if zid else None
-            if old is not None and not z.get("points"):
-                result.append(old)
-                continue
-            pts = [(float(x), float(y)) for x, y in (z.get("points") or [])]
-            if len(pts) != 4:
-                raise ActionError("Every zone needs four corners.")
-            if old is None:
-                zid, next_id = str(next_id), next_id + 1
-            polygon = Polygon(coordinates=[pts + [pts[0]]])
-            kind = VirtualWallNoMopZoneV1 if z.get("kind") == "nomop" else VirtualWallRectangleV1
-            result.append(kind(wall_id=zid, polygon=polygon))
-        return await apply_edit(robot, m.p2map_id, SetVirtualWallsV1(walls=result), "Saved the zones.")
-    raise ActionError("Unknown edit.")
-
-
-async def apply_edit_v2(robot, map_id: str, command, done: str) -> str:
-    result = await robot.edit_map_v2_checked(map_id, command)
-    if result.is_error:
-        reason = result.error.name if result.error else (result.error_message or f"code {result.error_code}")
-        raise ActionError(f"iRobot rejected the edit: {reason}")
-    return done + (" The map picture may take a while to catch up." if result.is_partial else "")
+        kind = VirtualWallNoMopZoneV1 if z.get("kind") == "nomop" else VirtualWallRectangleV1
+        result.append(kind(wall_id=zid, polygon=polygon))
+    return await apply_edit(robot, m.p2map_id, SetVirtualWallsV1(walls=result), "Saved the zones.")
 
 
 def box_points(z: dict[str, Any]) -> list[tuple[float, float]]:
@@ -556,9 +516,10 @@ async def set_clean_zones(robot, m, body: dict[str, Any]) -> str:
     gone = [zid for zid in current if zid not in keep]
     done = []
     if zones:
-        done.append(await apply_edit_v2(robot, m.p2map_id, AddCleanZones(zones=zones), "Saved the clean zones."))
+        done.append(await apply_edit(robot, m.p2map_id, AddCleanZones(zones=zones), "Saved the clean zones.", v2=True))
     if gone:
-        done.append(await apply_edit_v2(robot, m.p2map_id, DeleteCleanZones(zone_ids=gone), f"Removed {len(gone)} clean zone{'s' if len(gone) != 1 else ''}."))
+        done.append(await apply_edit(robot, m.p2map_id, DeleteCleanZones(zone_ids=gone),
+                                     f"Removed {len(gone)} clean zone{'s' if len(gone) != 1 else ''}.", v2=True))
     return " ".join(done) or "Nothing to change."
 
 
@@ -589,7 +550,7 @@ async def set_carpets(robot, m, body: dict[str, Any]) -> str:
             cid, next_id = str(next_id), next_id + 1
         entries.append(FloorTypeEntry(floor_type_id=cid, type_name="carpet", name="", enabled=bool(c.get("enabled", True)),
                                       user_modified=True, geometry=Polygon(coordinates=[box_points(c)])))
-    return await apply_edit_v2(robot, m.p2map_id, SetFloorTypes(floor_types=entries), "Saved the carpets.")
+    return await apply_edit(robot, m.p2map_id, SetFloorTypes(floor_types=entries), "Saved the carpets.", v2=True)
 
 
 async def set_furniture(robot, m, body: dict[str, Any]) -> str:
@@ -621,7 +582,7 @@ async def set_furniture(robot, m, body: dict[str, Any]) -> str:
             raise ActionError("A piece of furniture is missing its outline.")
         entries.append(Furniture(furniture_type=FurnitureType[kind], geometry=Polygon(coordinates=[ring_]),
                                  furniture_id=fid, user_modified=user))
-    return await apply_edit_v2(robot, m.p2map_id, SetFurniture(furniture=entries), "Saved the furniture.")
+    return await apply_edit(robot, m.p2map_id, SetFurniture(furniture=entries), "Saved the furniture.", v2=True)
 
 
 # --- cleaning preferences ---------------------------------------------------------
@@ -1261,16 +1222,35 @@ async def factory_reset(robot, body: dict[str, Any]) -> str:
 
 # --- web server ---------------------------------------------------------------
 
-MAP_EDITS = ("rename", "merge", "split", "zone_add", "zone_remove", "zones_set", "clean_zones_set", "carpets_set",
-             "furniture_set")
+MAP_EDITS = ("rename", "merge", "split", "zones_set", "clean_zones_set", "carpets_set", "furniture_set")
+MAP_ADMIN = ("map_rename", "map_rotate", "map_delete")
+
+
+def _simple(command: str):
+    """A handler that sends one simple command, ignoring the body."""
+    return lambda robot, body: simple_command(robot, command)
+
+
+def _edit(action: str):
+    return lambda robot, body: edit(robot, action, body)
+
+
+def _map_admin(action: str):
+    return lambda robot, body: map_admin(robot, action, body)
+
+
+def _reader(fn):
+    """A reader that takes no body."""
+    return lambda robot, body: fn(robot)
+
 
 # action -> (handler(robot, body), needs the MQTT connection)
 ACTIONS = {
-    **{c: ((lambda c: lambda r, b: simple_command(r, c))(c), True) for c in SIMPLE_COMMANDS},
+    **{c: (_simple(c), True) for c in SIMPLE_COMMANDS},
     "clean_rooms": (clean_rooms, True),
     "point_clean": (point_clean, True),
-    **{e: ((lambda e: lambda r, b: edit(r, e, b))(e), False) for e in MAP_EDITS},
-    **{a: ((lambda a: lambda r, b: map_admin(r, a, b))(a), False) for a in ("map_rename", "map_rotate", "map_delete")},
+    **{e: (_edit(e), False) for e in MAP_EDITS},
+    **{a: (_map_admin(a), False) for a in MAP_ADMIN},
     "run_routine": (run_routine, True),
     "create_routine": (create_routine, False),
     "update_routine": (update_routine, False),
@@ -1292,22 +1272,22 @@ ACTIONS = {
 # The data the page shows. All of it is read once at startup and kept here,
 # so the page opens with everything already loaded.
 READERS = {
-    "map": (lambda r, b: map_view(r, b.get("map_id"), bool(b.get("all_maps"))), False),
-    "routines": (lambda r, b: routines(r), False),
-    "schedules": (lambda r, b: schedules(r), False),
-    "dnd": (lambda r, b: dnd(r), False),
-    "parts": (lambda r, b: parts(r), False),
-    "settings": (lambda r, b: settings(r), True),
-    "status": (lambda r, b: status(r), True),
-    "history": (lambda r, b: history(r), False),
-    "estimates": (lambda r, b: estimates(r), False),
-    "about": (lambda r, b: about(r), True),
-    "notifications": (lambda r, b: notifications(r), False),
+    "map": (lambda robot, body: map_view(robot, body.get("map_id"), bool(body.get("all_maps"))), False),
+    "routines": (_reader(routines), False),
+    "schedules": (_reader(schedules), False),
+    "dnd": (_reader(dnd), False),
+    "parts": (_reader(parts), False),
+    "settings": (_reader(settings), True),
+    "status": (_reader(status), True),
+    "history": (_reader(history), False),
+    "estimates": (_reader(estimates), False),
+    "about": (_reader(about), True),
+    "notifications": (_reader(notifications), False),
 }
 
 # What to re-read after a change, inside the same login as the change.
 REFRESH = {
-    **{a: ["map"] for a in MAP_EDITS + ("map_rename", "map_rotate", "map_delete")},
+    **{a: ["map"] for a in MAP_EDITS + MAP_ADMIN},
     **{a: ["routines"] for a in ("create_routine", "update_routine", "delete_routine")},
     **{a: ["schedules"] for a in ("toggle_schedule", "create_schedule", "update_schedule", "delete_schedule")},
     "set_dnd": ["dnd"],
@@ -1317,15 +1297,14 @@ REFRESH = {
 }
 
 
-async def read_sections(robot, names: list[str], body: dict[str, Any], connected: list[bool]):
-    """Reads several sections in one session. One failing doesn't stop the rest."""
+async def read_sections(robot, names: list[str], body: dict[str, Any]) -> tuple[dict[str, Any], dict[str, str]]:
+    """Reads several sections in one session. One failing doesn't stop the
+    rest. The caller connects first when any of them needs MQTT (see
+    READERS and server.py)."""
     sections, errors = {}, {}
     for name in names:
-        reader, mqtt = READERS[name]
+        reader, _ = READERS[name]
         try:
-            if mqtt and not connected[0]:
-                await robot.connect()
-                connected[0] = True
             sections[name] = await reader(robot, body)
         except ActionError as err:
             errors[name] = str(err)

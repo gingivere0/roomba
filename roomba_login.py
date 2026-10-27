@@ -11,6 +11,10 @@ Saving only happens after iRobot has accepted the login once, so a typo is
 never remembered. Run a script with "forget" (roomba.bat forget) or
 "--forget" (roomba_web.bat --forget), or use the button in the web app's
 Settings, to remove it.
+
+The Credential Manager bindings at the bottom (read_secret, write_secret, and
+delete_secret) are shared with app/phonekey.py, which keeps the phone link's
+key the same way.
 """
 
 import ctypes
@@ -33,93 +37,25 @@ def supported() -> bool:
     return sys.platform == "win32"
 
 
-# ---------- Windows Credential Manager (advapi32), no extra packages
-
-CRED_TYPE_GENERIC = 1
-CRED_PERSIST_LOCAL_MACHINE = 2   # this user on this PC, survives restarts, doesn't roam
-ERROR_NOT_FOUND = 1168
-
-
-class _FILETIME(ctypes.Structure):
-    _fields_ = [("dwLowDateTime", ctypes.c_uint32), ("dwHighDateTime", ctypes.c_uint32)]
-
-
-class _CREDENTIAL(ctypes.Structure):
-    # CREDENTIALW, with fixed-size DWORDs so the layout is right on any 64-bit build.
-    _fields_ = [
-        ("Flags", ctypes.c_uint32),
-        ("Type", ctypes.c_uint32),
-        ("TargetName", ctypes.c_wchar_p),
-        ("Comment", ctypes.c_wchar_p),
-        ("LastWritten", _FILETIME),
-        ("CredentialBlobSize", ctypes.c_uint32),
-        ("CredentialBlob", ctypes.POINTER(ctypes.c_ubyte)),
-        ("Persist", ctypes.c_uint32),
-        ("AttributeCount", ctypes.c_uint32),
-        ("Attributes", ctypes.c_void_p),
-        ("TargetAlias", ctypes.c_wchar_p),
-        ("UserName", ctypes.c_wchar_p),
-    ]
-
-
-def _api():
-    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
-    write = advapi32.CredWriteW
-    write.argtypes = [ctypes.POINTER(_CREDENTIAL), ctypes.c_uint32]
-    write.restype = ctypes.c_int
-    read = advapi32.CredReadW
-    read.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
-                     ctypes.POINTER(ctypes.POINTER(_CREDENTIAL))]
-    read.restype = ctypes.c_int
-    delete = advapi32.CredDeleteW
-    delete.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
-    delete.restype = ctypes.c_int
-    free = advapi32.CredFree
-    free.argtypes = [ctypes.c_void_p]
-    free.restype = None
-    return write, read, delete, free
-
-
 def load() -> Login | None:
     """The saved login, or None if there isn't one. Raises OSError if Windows refuses."""
     if not supported():
         return None
-    _, read, _, free = _api()
-    found = ctypes.POINTER(_CREDENTIAL)()
-    if not read(TARGET, CRED_TYPE_GENERIC, 0, ctypes.byref(found)):
-        err = ctypes.get_last_error()
-        if err == ERROR_NOT_FOUND:
-            return None
-        raise ctypes.WinError(err)
-    try:
-        cred = found.contents
-        blob = ctypes.string_at(cred.CredentialBlob, cred.CredentialBlobSize)
-        email, country = cred.UserName or "", cred.Comment or "US"
-    finally:
-        free(found)
-    password = blob.decode("utf-16-le")
+    found = read_secret(TARGET)
+    if not found:
+        return None
+    email, country, password = found
     if not email or not password:
         return None
-    return Login(email, password, country)
+    return Login(email, password, country or "US")
 
 
 def save(login: Login) -> None:
     """Saves (or replaces) the login. Raises OSError if Windows refuses."""
     if not supported():
         raise OSError("saving a login is only supported on Windows")
-    write, _, _, _ = _api()
-    blob = login.password.encode("utf-16-le")
-    buf = ctypes.create_string_buffer(blob, len(blob))
-    cred = _CREDENTIAL()
-    cred.Type = CRED_TYPE_GENERIC
-    cred.TargetName = TARGET
-    cred.Comment = login.country   # the account's country code, e.g. "US"
-    cred.CredentialBlobSize = len(blob)
-    cred.CredentialBlob = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
-    cred.Persist = CRED_PERSIST_LOCAL_MACHINE
-    cred.UserName = login.email
-    if not write(ctypes.byref(cred), 0):
-        raise ctypes.WinError(ctypes.get_last_error())
+    # The account's country code (e.g. "US") rides along in the comment field.
+    write_secret(TARGET, login.email, login.country, login.password)
     # Read it back so a silent mismatch can't leave a broken entry behind.
     if load() != login:
         forget()
@@ -130,13 +66,7 @@ def forget() -> bool:
     """Removes the saved login. True if there was one."""
     if not supported():
         return False
-    _, _, delete, _ = _api()
-    if delete(TARGET, CRED_TYPE_GENERIC, 0):
-        return True
-    err = ctypes.get_last_error()
-    if err == ERROR_NOT_FOUND:
-        return False
-    raise ctypes.WinError(err)
+    return delete_secret(TARGET)
 
 
 # ---------- prompts
@@ -228,3 +158,101 @@ def after_rejection(choice: Choice, reason: str) -> str | None:
     choice.saved = False
     return (f"iRobot rejected the saved login ({reason}), so it was removed from this PC. "
             "If the password changed, start again and type the new one.")
+
+
+# ---------- Windows Credential Manager (advapi32), no extra packages
+#
+# Each entry is a "generic" credential: a target name, a user name, a comment,
+# and a secret blob (stored as UTF-16, the way Windows itself stores passwords).
+
+CRED_TYPE_GENERIC = 1
+CRED_PERSIST_LOCAL_MACHINE = 2   # this user on this PC, survives restarts, doesn't roam
+ERROR_NOT_FOUND = 1168
+
+
+class _FILETIME(ctypes.Structure):
+    _fields_ = [("dwLowDateTime", ctypes.c_uint32), ("dwHighDateTime", ctypes.c_uint32)]
+
+
+class _CREDENTIAL(ctypes.Structure):
+    # CREDENTIALW, with fixed-size DWORDs so the layout is right on any 64-bit build.
+    _fields_ = [
+        ("Flags", ctypes.c_uint32),
+        ("Type", ctypes.c_uint32),
+        ("TargetName", ctypes.c_wchar_p),
+        ("Comment", ctypes.c_wchar_p),
+        ("LastWritten", _FILETIME),
+        ("CredentialBlobSize", ctypes.c_uint32),
+        ("CredentialBlob", ctypes.POINTER(ctypes.c_ubyte)),
+        ("Persist", ctypes.c_uint32),
+        ("AttributeCount", ctypes.c_uint32),
+        ("Attributes", ctypes.c_void_p),
+        ("TargetAlias", ctypes.c_wchar_p),
+        ("UserName", ctypes.c_wchar_p),
+    ]
+
+
+_advapi32 = None
+
+
+def _api():
+    """The four advapi32 calls, with their argument types set up once."""
+    global _advapi32
+    if _advapi32 is None:
+        lib = ctypes.WinDLL("advapi32", use_last_error=True)
+        lib.CredWriteW.argtypes = [ctypes.POINTER(_CREDENTIAL), ctypes.c_uint32]
+        lib.CredWriteW.restype = ctypes.c_int
+        lib.CredReadW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+                                  ctypes.POINTER(ctypes.POINTER(_CREDENTIAL))]
+        lib.CredReadW.restype = ctypes.c_int
+        lib.CredDeleteW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
+        lib.CredDeleteW.restype = ctypes.c_int
+        lib.CredFree.argtypes = [ctypes.c_void_p]
+        lib.CredFree.restype = None
+        _advapi32 = lib
+    return _advapi32
+
+
+def read_secret(target: str) -> tuple[str, str, str] | None:
+    """(user name, comment, secret) for the entry, or None if there isn't one.
+    Raises OSError if Windows refuses."""
+    api = _api()
+    found = ctypes.POINTER(_CREDENTIAL)()
+    if not api.CredReadW(target, CRED_TYPE_GENERIC, 0, ctypes.byref(found)):
+        err = ctypes.get_last_error()
+        if err == ERROR_NOT_FOUND:
+            return None
+        raise ctypes.WinError(err)
+    try:
+        cred = found.contents
+        blob = ctypes.string_at(cred.CredentialBlob, cred.CredentialBlobSize)
+        username, comment = cred.UserName or "", cred.Comment or ""
+    finally:
+        api.CredFree(found)
+    return username, comment, blob.decode("utf-16-le")
+
+
+def write_secret(target: str, username: str, comment: str, secret: str) -> None:
+    """Saves (or replaces) the entry. Raises OSError if Windows refuses."""
+    blob = secret.encode("utf-16-le")
+    buf = ctypes.create_string_buffer(blob, len(blob))
+    cred = _CREDENTIAL()
+    cred.Type = CRED_TYPE_GENERIC
+    cred.TargetName = target
+    cred.Comment = comment
+    cred.CredentialBlobSize = len(blob)
+    cred.CredentialBlob = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ubyte))
+    cred.Persist = CRED_PERSIST_LOCAL_MACHINE
+    cred.UserName = username
+    if not _api().CredWriteW(ctypes.byref(cred), 0):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def delete_secret(target: str) -> bool:
+    """Removes the entry. True if there was one. Raises OSError if Windows refuses."""
+    if _api().CredDeleteW(target, CRED_TYPE_GENERIC, 0):
+        return True
+    err = ctypes.get_last_error()
+    if err == ERROR_NOT_FOUND:
+        return False
+    raise ctypes.WinError(err)

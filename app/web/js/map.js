@@ -149,12 +149,10 @@ function drawMap(svg, map, opts) {
     if (z.kind === "wall") { world.append(sv("polyline", { points: pts(z.points), class: "m-wallline", "stroke-width": 4 * px })); return; }
     const g = sv("g", {});
     g.append(sv("polygon", { points: pts(z.points), class: z.kind === "nomop" ? "m-nomop" : "m-keepout", "stroke-width": 1.6 * px }));
-    {
-      // The official minus-in-a-circle mark.
-      const [cx, cy] = centroid(z.points.length > 1 ? z.points : [[0, 0]]), k = opts.small ? 0.6 : 1;
-      g.append(sv("circle", { cx, cy, r: 8 * k * px, fill: "none", stroke: "#fff", "stroke-width": 1.3 * k * px }));
-      g.append(sv("line", { x1: cx - 4 * k * px, y1: cy, x2: cx + 4 * k * px, y2: cy, stroke: "#fff", "stroke-width": 1.3 * k * px }));
-    }
+    // The official minus-in-a-circle mark.
+    const [cx, cy] = centroid(z.points.length > 1 ? z.points : [[0, 0]]), k = opts.small ? 0.6 : 1;
+    g.append(sv("circle", { cx, cy, r: 8 * k * px, fill: "none", stroke: "#fff", "stroke-width": 1.3 * k * px }));
+    g.append(sv("line", { x1: cx - 4 * k * px, y1: cy, x2: cx + 4 * k * px, y2: cy, stroke: "#fff", "stroke-width": 1.3 * k * px }));
     if (opts.onZone) g.addEventListener("click", e => { e.stopPropagation(); opts.onZone(z); });
     else g.style.pointerEvents = "none";
     world.append(g);
@@ -313,10 +311,7 @@ function zoneEditor(svg, map, onChange, opts) {
       return { id: z.id, kind: z.kind, name: z.name, points: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] };
     });
   }
-  function changed() {
-    const before = source.length;
-    return zones.some(z => z.moved) || zones.length !== before;
-  }
+  function changed() { return zones.some(z => z.moved) || zones.length !== source.length; }
   draw();
   return { add, result, changed, redraw: draw };
 }
