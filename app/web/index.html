@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f4ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Roomba</title>
+<meta name="apple-mobile-web-app-title" content="Roomba">
+<link rel="icon" type="image/svg+xml" href="static/img/app_icon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="static/img/app_icon_64.png">
+<link rel="apple-touch-icon" href="static/img/app_icon_180.png">
+<link rel="stylesheet" href="static/app.css?v=__V__">
+</head>
+<body>
+<!--
+  The page is built by the scripts in static/js:
+    core.js     talking to the server, live updates, sheets, and helpers
+    map.js      drawing the floor map and the zone editor
+    screens.js  every screen (Home, map, robot, routines, settings, ...)
+  Colors and sizes are at the top of static/app.css.
+-->
+<div id="app"></div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div class="sheetbody" id="sheetbody"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+// If anything goes wrong in the scripts below, say so on the page (with a
+// way back) instead of leaving it blank, and send the details to the PC
+// (app\debug\client_errors.log) so they can be fixed.
+window.TOKEN = "__TOKEN__"; window.VERSION = "__V__"; window.IMAGES = __IMAGES__;
+(function () {
+  var shown = 0;
+  window.reportProblem = function (what, detail) {
+    var text = String(what || "Unknown problem");
+    try {
+      fetch("api/client_error", { method: "POST", headers: { "X-Roomba-Token": window.TOKEN, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, detail: String(detail || "").slice(0, 3000), page: location.hash, agent: navigator.userAgent }) });
+    } catch (e) { /* nothing more we can do */ }
+    if (shown++ > 4) return;
+    var box = document.getElementById("problem");
+    if (!box) {
+      box = document.createElement("div"); box.id = "problem"; box.className = "problem";
+      box.innerHTML = '<b>Something went wrong in the app.</b><p></p><div><button type="button" data-do="reload">Reload</button> <button type="button" data-do="home">Go to Home</button> <button type="button" data-do="hide">Hide</button></div>';
+      box.addEventListener("click", function (e) {
+        var d = e.target.getAttribute("data-do");
+        if (d === "reload") location.reload();
+        if (d === "home") { location.hash = "#home"; location.reload(); }
+        if (d === "hide") box.remove();
+      });
+      document.body.appendChild(box);
+    }
+    box.querySelector("p").textContent = text + (detail ? "\n" + String(detail).split("\n").slice(0, 3).join("\n") : "");
+  };
+  window.addEventListener("error", function (e) {
+    if (e.target && e.target !== window && (e.target.src || e.target.href)) {   // a script or style that didn't load
+      if (e.target.tagName === "SCRIPT") window.reportProblem("Couldn't load " + (e.target.src || "").split("?")[0].split("/").pop());
+      return;
+    }
+    // A bare "Script error." with no file or line comes from a script that isn't
+    // ours (iPhone Safari's Share sheet raises one); the app is fine, so don't say so.
+    if (!e.filename && !e.lineno && !e.error) return;
+    window.reportProblem(e.message, (e.filename || "").split("?")[0].split("/").pop() + ":" + e.lineno + ":" + e.colno + (e.error && e.error.stack ? "\n" + e.error.stack : ""));
+  }, true);
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e.reason || {}; window.reportProblem(r.message || String(r), r.stack);
+  });
+})();
+</script>
+<script src="static/js/core.js?v=__V__"></script>
+<script src="static/js/map.js?v=__V__"></script>
+<script src="static/js/screens.js?v=__V__"></script>
+</body>
+</html>

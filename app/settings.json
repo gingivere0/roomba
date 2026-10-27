@@ -1,0 +1,7 @@
+{
+  "stay_logged_in": true,
+  "lan": true,
+  "port": 8766,
+  "poll_seconds_cleaning": 5,
+  "poll_seconds_idle": 30
+}

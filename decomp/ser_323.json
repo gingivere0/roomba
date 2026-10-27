@@ -1,0 +1,1376 @@
+{
+"Firmware$FirmwareItem": [
+"version",
+"sku",
+"targetSoftwareVer",
+"notes",
+"releaseDate",
+"downloadUrl",
+"metapackageUrl",
+"deploymentMpkg",
+"track",
+"provisioningPriority",
+"otaPriority",
+"signing",
+"fused",
+"expectedDownloadTime",
+"expectedInstallationTime"
+],
+"Firmware$DockFirmware": [
+"version",
+"provisioningPriority",
+"otaPriority",
+"track",
+"expectedInstallationTime"
+],
+"": [
+"favoriteId"
+],
+"FavoriteTimeEstimate": [
+"unit",
+"estimate",
+"confidence"
+],
+"CleanMissionStatusData": [
+"cycle",
+"phase",
+"operatingMode",
+"error",
+"notReady",
+"condNotReady",
+"sqft",
+"initiator",
+"nMssn",
+"mssnStrtTm",
+"expireTm",
+"rechrgTm",
+"missionId"
+],
+"DockStatusData": [
+"known",
+"pn",
+"state",
+"id",
+"fwVer",
+"hwRev",
+"varId",
+"frState",
+"error",
+"fwVerSec",
+"tankLvl",
+"pwState",
+"pdState"
+],
+"MissionEventDto": [
+"type",
+"ts",
+"ets",
+"room",
+"zone",
+"travel",
+"error",
+"evac",
+"disc",
+"reloc",
+"traversal",
+"poly",
+"tentativeLoc",
+"refill",
+"wetOut",
+"padWash",
+"padDry",
+"cmd"
+],
+"MissionTimelineDto": [
+"ver",
+"nMssn",
+"mission_id",
+"cmd",
+"event",
+"finEvents",
+"futureEvents",
+"timelineRequestId",
+"covStrat"
+],
+"RefillInfoDto": [
+"frState",
+"flAmt",
+"error"
+],
+"CommandInfoDto": [
+"initiator",
+"time",
+"command"
+],
+"TentativeLocationInfoDto": [
+"p2mapId",
+"p2mapvId",
+"rid",
+"confp2mapId",
+"confp2mapvId",
+"confRid"
+],
+"TravelInfoDto": [
+"dest",
+"status",
+"reason",
+"wip",
+"p2mapId",
+"p2mapvId",
+"rid",
+"zid",
+"polyid",
+"wid"
+],
+"RoomInfoDto": [
+"p2mapId",
+"p2mapvId",
+"rid",
+"pmapId",
+"pmapvId",
+"regionId",
+"status",
+"coverage",
+"area",
+"passArea",
+"passCount",
+"totalArea"
+],
+"PadWashInfoDto": [
+"pwState",
+"flAmt",
+"error",
+"reason"
+],
+"DiscoveryInfoDto": [
+"p2mapId",
+"p2mapvId",
+"rid"
+],
+"ErrorInfoDto": [
+"type",
+"value"
+],
+"PolygonInfoDto": [
+"p2mapId",
+"p2mapvId",
+"poly",
+"rid",
+"polyid",
+"area",
+"areaCleaned"
+],
+"WetOutInfoDto": [
+"type",
+"status"
+],
+"TraversalInfoDto": [
+"type",
+"p2mapId",
+"p2mapvId",
+"rid",
+"zid"
+],
+"ZoneInfoDto": [
+"p2mapId",
+"p2mapvId",
+"zid",
+"status",
+"coverage",
+"area",
+"passArea",
+"passCount",
+"totalArea"
+],
+"RelocalizationInfoDto": [
+"p2mapId",
+"p2mapvId",
+"confp2mapId",
+"confp2mapvId",
+"rid",
+"confRid"
+],
+"PadDryInfoDto": [
+"pdState",
+"error"
+],
+"EvacInfoDto": [
+"state",
+"error"
+],
+"ScheduleCommandWrapper": [
+"command"
+],
+"ScheduleOptionsDto": [
+"frequency",
+"commands",
+"end_commands",
+"start",
+"end",
+"robot_id",
+"enabled",
+"force_cloud",
+"deleted",
+"schedule_id",
+"is_smart_clean_fav",
+"created_time"
+],
+"ScheduleDto": [
+"schedule_id"
+],
+"HouseholdSchedulesResponseDto": [
+"household_schedules"
+],
+"HouseholdScheduleDto": [
+"schedules",
+"household_schedule_id"
+],
+"ScheduleTimeDto": [
+"day",
+"hour",
+"min"
+],
+"NewScheduleItemPayload": [],
+"NewSchedulePayload": [
+"schedules"
+],
+"EditSchedulePayload": [
+"schedules"
+],
+"CreateScheduleResponseDto": [
+"schedules"
+],
+"FirmwareItemDto": [
+"version",
+"sku",
+"targetSoftwareVer",
+"notes",
+"releaseDate",
+"downloadUrl",
+"metapackageUrl",
+"deploymentMpkg",
+"track",
+"provisioningPriority",
+"otaPriority",
+"signing",
+"fused",
+"expectedDownloadTime",
+"expectedInstallationTime"
+],
+"DockFirmwareDto": [
+"version",
+"provisioningPriority",
+"otaPriority",
+"track",
+"expectedInstallationTime"
+],
+"FavoriteTimeEstimateDTO": [
+"unit",
+"estimate",
+"confidence"
+],
+"FavoriteDTO": [
+"favorite_id",
+"icon",
+"default",
+"deleted",
+"hidden",
+"display_order",
+"creation_timestamp",
+"last_modified",
+"last_user_modified",
+"version",
+"color",
+"commanddefs",
+"time_estimates"
+],
+"UpdateFavoriteResponse": [
+"favorite_id"
+],
+"CreateFavoriteResponse": [
+"favorite_id"
+],
+"LanguagePackResponseDto": [
+"languagePackItems"
+],
+"LanguagePackItemDto": [
+"sku",
+"packId",
+"version",
+"deploymentMpkg",
+"releaseDate"
+],
+"Integration": [
+"id",
+"linked",
+"state",
+"lastUsed"
+],
+"AvailableSmartHomeIntegration": [
+"iosAppUrl",
+"iosLinkingAppUrl",
+"iosLinkingFallbackUrl",
+"androidAppUrl",
+"androidLinkingAppUrl",
+"androidLinkingFallbackUrl",
+"iconId",
+"activityFeedUrl",
+"voiceCapable",
+"iosLinkingCapable",
+"androidLinkingCapable"
+],
+"RobotSerialDto": [
+"RobotID",
+"SerialNumber",
+"built_as_sku",
+"family_variant",
+"sku",
+"min_utc_reg_date",
+"is_refurbished",
+"is_raas",
+"is_smartcare",
+"serial_history",
+"series",
+"family"
+],
+"SerialHistoryEntryDto": [
+"serial_number",
+"effective_from"
+],
+"RobotSerialErrorDto": [
+"error"
+],
+"IntegrationDto": [
+"ios_app_url",
+"ios_linking_app_url",
+"ios_linking_fallback_url",
+"android_app_url",
+"android_linking_app_url",
+"android_linking_fallback_url",
+"icon_id",
+"activity_feed_url",
+"voice_capable",
+"ios_linking_capable",
+"android_linking_capable"
+],
+"RobotRegistrationErrorDto": [
+"errors"
+],
+"IntegrationDetailDto": [
+"linked",
+"state",
+"last_used"
+],
+"RobotRegistrationDto": [
+"previouslyRegistered",
+"isValid",
+"error"
+],
+"SubscriptionInfoDto": [
+"latest_registration_date"
+],
+"IntegrationStatusDto": [
+"integrations"
+],
+"RobotRegistrationErrorDetailDto": [
+"reason",
+"detail"
+],
+"EntitlementsLinksDto": [
+"health_dashboard",
+"base_url",
+"service_portal"
+],
+"EntitlementDto": [
+"entitlement_id",
+"entitlement_type",
+"feature_id",
+"entitlement_status",
+"purchase_timestamp",
+"subscription_status",
+"subscription_expiration",
+"robot_id",
+"shutoff_date",
+"grace_period",
+"entitlement_source",
+"subscription_info",
+"notes",
+"latest_update_timestamp",
+"created_timestamp",
+"entitlements_links"
+],
+"AvailableSmartHomeIntegrationsDto": [
+"available_integrations"
+],
+"LoginRequestBody$AppInfo": [
+"device_id",
+"version",
+"language",
+"device_name",
+"package_name"
+],
+"AddAssetResponse": [],
+"RobotRegistrationRequest$Body": [
+"email",
+"serialNumber",
+"robotName",
+"purchaseDate"
+],
+"LoginRequestBody$Gigya": [
+"signature",
+"timestamp",
+"uid"
+],
+"RemoveAssetResponse": [],
+"LoginRequestBody": [
+"gigya",
+"app_id",
+"app_info",
+"authorizer_params",
+"multiple_authorizer_token_support"
+],
+"ResetRequest$Body": [
+"robot_password",
+"synchronous",
+"send_wipe"
+],
+"LoginRequestBody$DeviceTokens": [
+"devices_per_token"
+],
+"AddAssetRequest$Body": [
+"app_id",
+"robot_id"
+],
+"LoginResponse": [
+"credentials",
+"connection_tokens"
+],
+"ConnectionToken": [
+"expires",
+"iot_token",
+"devices",
+"client_id",
+"iot_signature",
+"iot_authorizer_name"
+],
+"AssetListData": [
+"assets"
+],
+"Credentials": [
+"AccessKeyId",
+"SecretKey",
+"SessionToken",
+"CognitoId"
+],
+"AssetData": [
+"id",
+"sku",
+"softwareVer",
+"svcDeplId",
+"user_cert"
+],
+"EditUserPermissionsBodyDto": [
+"household_users"
+],
+"HouseholdUserDto": [
+"household_id",
+"entity_id",
+"cognito_id",
+"creation_timestamp"
+],
+"UpdateRobotBodyDto": [
+"robot_pmap_sharing"
+],
+"HouseholdDto": [
+"household_id",
+"household_name",
+"household_robots"
+],
+"HouseholdSettingsOptionsDto": [
+"last_user_modified",
+"hh_adults",
+"hh_kids",
+"hh_pets",
+"hh_adults_kids_prefer_not_to_answer",
+"hh_pets_prefer_not_to_answer",
+"hh_location_factor"
+],
+"AddRobotBodyDto": [
+"robot_id",
+"new_household_id",
+"robot_pmap_sharing"
+],
+"HouseholdSettingsDtoSerializer$HouseholdSettingsSurrogate": [
+"setting_id",
+"setting_type",
+"type"
+],
+"UpdateHouseholdResponseDto": [
+"household_id",
+"household_name"
+],
+"HouseholdAsset": [
+"robot_id"
+],
+"FabricDto": [
+"nodeId",
+"fabricId",
+"vendorId"
+],
+"HouseholdRobotDto": [
+"household_id",
+"entity_id",
+"robot_id",
+"robot_pmap_sharing",
+"creation_timestamp",
+"fabrics"
+],
+"HouseholdLocationDto": [
+"latitude",
+"longitude",
+"radius"
+],
+"TransferRobotBodyDto": [
+"robot_id",
+"current_household_id",
+"new_household_id"
+],
+"P2MapVersion": [
+"p2mapv_id",
+"p2map_id"
+],
+"CleanScoreDto": [
+"p2map_id",
+"error",
+"smart_clean_id",
+"active_p2mapv_id",
+"user_p2mapv_id",
+"mission_last_processed",
+"regions"
+],
+"AreaEstimateDto": [
+"area_id",
+"area_type",
+"estimates"
+],
+"CleanScoreDto$ErrorInfoDto": [
+"description"
+],
+"RoutineCommandDefDTO": [
+"robot_id",
+"command",
+"params",
+"p2map_id",
+"regions"
+],
+"CleaningProfileResponseDto": [
+"params",
+"regions"
+],
+"CleanScoreDto$SmartCleanMissionInfoDto": [
+"startTime",
+"nMssn",
+"missionId"
+],
+"RoutineRegionDTO": [
+"region_id",
+"params"
+],
+"EstimateParamsDto": [
+"operatingMode",
+"suctionLevel",
+"swScrub",
+"twoPass"
+],
+"TimeEstimateEntryDto": [
+"value",
+"data_model_version",
+"deviation",
+"params",
+"unit"
+],
+"SmartMapEstimateDto": [
+"smart_map_id",
+"areas"
+],
+"CleanScoreDto$SmartCleanRegionDto": [
+"region_id",
+"clean_score",
+"updated_ts",
+"last_updated_by",
+"high_traffic_enum",
+"mission_last_cleaned",
+"mission_last_unfinished",
+"smart_clean_prefs"
+],
+"TimeEstimatesResponseDto": [
+"robot_id",
+"api_version",
+"smart_maps"
+],
+"CleaningProfileRegionDto": [
+"region_id",
+"params"
+],
+"MissionHistoryItemResponse": [
+"missionId",
+"p2maps",
+"chrgs",
+"doneM",
+"runM",
+"flags",
+"saves",
+"evacs",
+"timestamp",
+"softwareVer",
+"nMssn",
+"sqft",
+"chrgM",
+"pauseM",
+"map_id",
+"startTime",
+"eDock",
+"dirt",
+"durationM",
+"pauseId",
+"map_id_req",
+"initiator",
+"done",
+"wlBars",
+"robot_id",
+"done_raw",
+"cmd",
+"dockedAtStart",
+"wifiChannel",
+"startEndWlBars",
+"pmaps",
+"pmaps_robot",
+"timeline"
+],
+"TimeEstimatesRequestBody": [
+"robot_id",
+"smart_map_id",
+"region_id",
+"zone_id"
+],
+"SurveyResponseDto": [
+"type",
+"app_ts",
+"details"
+],
+"MessageCenterMqttEnvelopeDto": [
+"event_version",
+"event_type",
+"event_class",
+"event_sent_ts",
+"event_object"
+],
+"MessageCenterActionButtonDto": [
+"text",
+"text_id",
+"destination_uri",
+"destination_uri_id",
+"destination_type"
+],
+"SurveyResponseDto$AnswerResponse": [
+"answer_id",
+"value",
+"value_id"
+],
+"SurveyDto": [
+"survey_id",
+"event_id",
+"questions"
+],
+"SurveyDto$AnswerDto": [
+"answer_id",
+"answer_type",
+"value",
+"value_id",
+"image_id",
+"min_value",
+"max_value",
+"min_value_text",
+"min_value_text_id",
+"max_value_text",
+"max_value_text_id",
+"substitutions",
+"actions"
+],
+"SurveyDto$ActionDto": [
+"action_type",
+"action_value",
+"action_payload"
+],
+"SurveyResponseDto$QuestionResponse": [
+"question_id",
+"answers",
+"answer_freeform"
+],
+"SurveyResponseDto$Details": [
+"survey_id",
+"questions"
+],
+"SurveyDto$ActionPayloadDto": [
+"questions",
+"url"
+],
+"NotificationRegistrationResponse": [
+"push_token",
+"push_settings"
+],
+"NotificationRegistrationPayloadDto": [
+"app_id",
+"push_token",
+"supported_push_types"
+],
+"MessageCenterDetailsContentDto": [
+"category_icon_id",
+"category_title_text",
+"category_title_id",
+"headline_text",
+"headline_text_id",
+"display_type",
+"action_type",
+"action_payload",
+"responses",
+"min_app_version",
+"robot_sku",
+"robot_serial_number",
+"robot_registration_date",
+"action_button",
+"active_parent_uri_id",
+"push_title_string_id",
+"push_string_id",
+"push_metadata"
+],
+"MessageCenterEventDto": [
+"event_id",
+"start_time",
+"end_time",
+"event_type",
+"event_details",
+"event_object_id",
+"robot_id",
+"event_state",
+"event_state_last_updated_ts",
+"hkc_feedback",
+"hkc_sns_recv_ts",
+"hkc_created_ts"
+],
+"MessageCenterEventDetailsDto": [
+"details_type",
+"details_content_id",
+"details_content_version",
+"details_content"
+],
+"NotificationSettingsUpdatePayloadDto": [
+"push_settings"
+],
+"MessageCenterActionPayloadDto": [
+"display_order",
+"content_text",
+"content_text_id",
+"content_id",
+"html",
+"html_id",
+"image",
+"internal_image_url",
+"image_url",
+"image_id",
+"internal_video_url",
+"video_url",
+"video_id",
+"numberOfSchedulesToDisplay",
+"script_id",
+"webview_url_id",
+"webview_url",
+"action_display",
+"banner_id",
+"banner_text",
+"disclaimers_text",
+"banner_image_id",
+"source_code",
+"product_url"
+],
+"MessageCenterResponseItemDto": [
+"survey_id",
+"response_type"
+],
+"SurveyDto$QuestionDto": [
+"question_id",
+"question_type",
+"value",
+"value_id",
+"title_id",
+"subtitle",
+"subtitle_id",
+"image_id",
+"substitutions",
+"answers",
+"answer_freeform"
+],
+"GeomDTO": [
+"center"
+],
+"RegionParamsDTO": [
+"carpetBoost",
+"edgeOnly",
+"heatedWater",
+"operatingMode",
+"padWetness",
+"sealForce",
+"spray",
+"suctionLevel",
+"swScrub",
+"twoPass"
+],
+"CommandDTO": [
+"command",
+"time",
+"initiator",
+"favorite_id",
+"ordered",
+"params",
+"p2map_id",
+"user_p2mapv_id",
+"pmap_id",
+"user_pmapv_id",
+"id_multipolys",
+"regions",
+"geom"
+],
+"MultiPolyMetadataDTO$Furniture": [
+"furnitureId"
+],
+"MultiPolyDTO": [
+"id",
+"metadata",
+"poly"
+],
+"CommandParamsDTO": [
+"carpetBoost",
+"edgeOnly",
+"heatedWater",
+"operatingMode",
+"padWetness",
+"quiet",
+"sealForce",
+"spray",
+"suctionLevel",
+"swScrub",
+"twoPass",
+"clean_score_id",
+"replay_of",
+"routine_modified",
+"routine_type",
+"smart_clean_id"
+],
+"MultiPolyMetadataDTO$Unknown": [
+"data"
+],
+"PadWetnessDTO": [
+"disposable",
+"padPlate",
+"reusable"
+],
+"RegionDTO": [
+"region_id",
+"type",
+"params",
+"region_name",
+"region_type"
+],
+"TitledContent": [
+"title",
+"content"
+],
+"OtherContent": [
+"content",
+"id"
+],
+"LatestAppVersionDTO": [
+"android"
+],
+"LatestAppVersionDTO$PlatformVersionDTO": [
+"version",
+"priority"
+],
+"LegalContentDto": [
+"version",
+"track",
+"privacyUrl",
+"tosUrl",
+"termsUrl",
+"eulaUrl",
+"dataSecurity",
+"noticesUrl"
+],
+"UserDeviceDto": [
+"device_name",
+"device_id",
+"version",
+"timestamp",
+"last_login",
+"app_language",
+"device_platform"
+],
+"DynamicResourceBundleInfoDto": [
+"bundle_name",
+"latest_version",
+"latest_version_url"
+],
+"CountryListDto": [
+"countries",
+"oneaccountcountries"
+],
+"HelpContentDto": [
+"customerCareWeb",
+"customerCareEmail",
+"customerCarePhone",
+"warranty",
+"ownersManual",
+"quickStart",
+"safetyGuide",
+"commonQuestions",
+"otherContent",
+"storeUrl",
+"firmwareInfo",
+"standbyModeLink",
+"gettingStarted",
+"troubleshooting",
+"voiceAssistance",
+"howRobotWorks",
+"preparingHome",
+"myServicePlans",
+"primeCustomerCareWeb",
+"primeStoreUrl",
+"guidedTourPages",
+"selectSubscriberCareEmail",
+"selectSubscriberCarePhone"
+],
+"AppFeedbackPayloadDTO": [
+"appId",
+"app_version",
+"category",
+"country",
+"language",
+"mobileOS",
+"mobileOSVersion",
+"package",
+"reach_out",
+"robotId",
+"sku",
+"software_version",
+"userAccount",
+"mission_number"
+],
+"AssetHealthDto": [
+"robot_id",
+"num_parts",
+"parts"
+],
+"AssetResetHealthPayloadDto": [
+"parts"
+],
+"AssetPartDto": [
+"part_id",
+"part_name",
+"robot_health_image",
+"robot_health_description_id",
+"buy_url",
+"guide_url",
+"counter_enabled"
+],
+"AssetPartResetDto": [
+"part_id",
+"counter"
+],
+"AssetPartsDto": [
+"buyPartsUrl",
+"parts"
+],
+"AssetPartHealthDto": [
+"part_id",
+"counter",
+"last_updated_ts",
+"count_type",
+"counter_category",
+"reset_by",
+"minutes_remaining",
+"count_remaining",
+"count_used"
+],
+"AssetHealthResetDto": [
+"robot_id",
+"num_parts",
+"parts"
+],
+"Robot": [
+"id",
+"sku",
+"softwareVer",
+"cap",
+"digiCap",
+"svcDeplId",
+"user_cert"
+],
+"Region": [
+"id",
+"type",
+"params"
+],
+"Robot$DigitalCapabilities": [
+"smartClean"
+],
+"CommandParams": [
+"timebox"
+],
+"Command": [
+"command",
+"ordered",
+"mapId",
+"userMapId",
+"favoriteId",
+"regions",
+"time",
+"initiator",
+"params"
+],
+"Robot$Capabilities": [
+"binFullDetect",
+"addOnHw",
+"oMode",
+"pose",
+"ota",
+"multiPass"
+],
+"SpotGeometry": [
+"center"
+],
+"Point": [
+"coordinates",
+"type"
+],
+"RawLiveMapUpdatePositionUpdateResponseDto": [
+"timestamp",
+"update_expire_ts",
+"pos_update"
+],
+"RawPositionUpdatesDto": [
+"cur_path"
+],
+"LiveMapUpdateResponseDto$LiveMapUpdate": [
+"livemap_url",
+"livemap_url_raw"
+],
+"LiveMapUpdateResponseDto": [
+"timestamp",
+"map_update"
+],
+"EditMapSettingsRequest$Command$SetName": [],
+"EditMapSettingsRequest$Command$SetUserPreferredOrientation": [
+"user_orientation_rad"
+],
+"LiveMapStreamResponse": [
+"mqtt_topic",
+"livemap_url"
+],
+"LiveMapUpdateResponse": [
+"timestamp",
+"map_update"
+],
+"LiveMapPositionUpdateResponse": [
+"timestamp",
+"update_expire_ts",
+"pos_update"
+],
+"LiveMapUpdateResponse$LiveMapUpdate": [
+"livemap_url",
+"livemap_url_raw"
+],
+"PositionUpdates$PositionUpdate": [
+"point",
+"orientation",
+"operatingModes"
+],
+"HazardFeature$Properties": [
+"type"
+],
+"CleanZoneFeature$Properties": [],
+"TrajectoryFeature$Properties": [
+"index",
+"operatingModes"
+],
+"Metadata": [
+"id",
+"version",
+"sourceFormat",
+"sourceMetadata"
+],
+"RoomFeature$Properties": [
+"adjacentRoomIDs",
+"type",
+"simplifiedGeometry"
+],
+"AdHocCleanZoneFeature$Properties": [],
+"CoverageFeature$Properties": [
+"operatingModes"
+],
+"FurnitureFeature$Properties": [
+"type",
+"source",
+"orientation",
+"cleaningArea"
+],
+"Manifest$Feature": [
+"type",
+"filepath",
+"schemaVersion"
+],
+"Manifest": [
+"metadata",
+"features",
+"experimentalFeatures"
+],
+"DockFeature$Properties": [
+"orientation"
+],
+"BordersFeature$Properties": [],
+"FloorPlanFeature$Properties": [
+"type",
+"roomId"
+],
+"PolicyZoneFeature$Properties": [
+"type",
+"threshold_type"
+],
+"FloorTypeFeature$Properties": [
+"type"
+],
+"FeatureCollection": [
+"type",
+"features"
+],
+"EditMapV1Request$Command$AdjustFurniture": [
+"timestamp",
+"furniture_list",
+"package"
+],
+"EditMapV1Request$Command$DeletePermanentAreas": [
+"area_ids"
+],
+"EditMapV1Request$Command$SetVirtualWalls": [
+"virwall"
+],
+"EditMapV1Request$Command$RenameRoom": [
+"room_id",
+"room_name"
+],
+"EditMapV1Request$Command$SplitRoom": [
+"room_id",
+"split_points"
+],
+"EditMapV1Request$Body": [
+"edit_cmd",
+"response_type"
+],
+"EditMapV1Request$Command$SetRoomType": [
+"room_id",
+"type_id"
+],
+"EditMapV1Request$Command$MergeRooms": [
+"room_ids"
+],
+"EditMapV1Request$Command$SetPermanentAreas": [
+"area_points"
+],
+"P2MapRawDataRequest$Body": [
+"response_type"
+],
+"P2MapGeoJSONRequest$Body": [
+"response_type"
+],
+"P2MapEditSuccessFallback": [
+"status",
+"map_url",
+"p2mapv_id",
+"p2map_metadata"
+],
+"P2MapError": [],
+"P2MapURL": [
+"map_url"
+],
+"P2MapError$MessageContainer": [
+"Message"
+],
+"P2MapEditPartialSuccess": [
+"status",
+"p2mapv_id",
+"p2map_metadata"
+],
+"P2MapData": [
+"p2map_id",
+"active_p2mapv_id",
+"create_time",
+"last_p2mapv_ts",
+"state",
+"visible",
+"user_orientation_rad"
+],
+"EditMapV2Request$Body": [
+"edit_cmd",
+"response_type"
+],
+"EditMapV2Request$CommandV2$AddCleanZones": [
+"zones"
+],
+"EditMapV2Request$CommandV2$MergeRooms": [
+"ids"
+],
+"EditMapV2Request$CommandV2$SetKeepOutZones": [
+"keep_out_zones",
+"no_mop_zones",
+"virtual_walls"
+],
+"EditMapV2Request$CommandV2$DeleteCleanZones": [
+"ids"
+],
+"EditMapV2Request$CommandV2$SplitRoom": [
+"id",
+"split_line"
+],
+"EditMapV2Request$CommandV2$SetFurniture": [
+"furniture"
+],
+"EditMapV2Request$CommandV2$SetRoomType": [
+"room_id",
+"type_id"
+],
+"MapEditV3Request": [
+"msgId",
+"params"
+],
+"MapEditV3Request$Params": [
+"map_id",
+"data"
+],
+"MapEditV3Request$DataEnvelope": [
+"value"
+],
+"MapEditV3Response": [
+"msgId",
+"data"
+],
+"DiscoveryResponseDto": [
+"gigya",
+"pushy",
+"current_deployment",
+"deployments"
+],
+"DeploymentDto": [
+"awsRegion",
+"discoveryTTL",
+"httpBase",
+"httpBaseAuth",
+"svcDeplId",
+"mqtt",
+"iotTopics",
+"irbtTopics"
+],
+"GigyaDto": [
+"api_key",
+"datacenter_domain"
+],
+"PushyDto": [
+"enterprise_host",
+"package_name_suffix"
+],
+"ConnectionTokenDto": [
+"expires",
+"iot_token",
+"devices",
+"client_id",
+"iot_signature",
+"iot_authorizer_name"
+],
+"LoginResponseDto": [
+"credentials",
+"connection_tokens",
+"robots"
+],
+"CredentialsDto": [
+"AccessKeyId",
+"SecretKey",
+"SessionToken",
+"Expiration",
+"CognitoId"
+],
+"ForgetMeRequest$Body": [
+"language",
+"signature",
+"timestamp",
+"uid"
+],
+"DiscoveryCapabilities": [
+"5ghz",
+"expectingUserConf",
+"matter",
+"ota",
+"prov",
+"svcConf",
+"supportsFiveGhz",
+"expectingUserConfirmation",
+"supportsMatter",
+"supportsOtaOverBle",
+"supportsSettingServiceDiscoveryAndNtp"
+],
+"AccessPointInfo": [
+"bssid",
+"freq",
+"sig_lev",
+"sec_types",
+"flags"
+],
+"SSIDInfo": [
+"ssidName",
+"accessPointInfos"
+],
+"TimeZoneCharacteristicData": [
+"utctime",
+"localtimeoffset"
+],
+"ServiceDiscoveryCharacteristicData": [
+"serviceDiscoveryURL",
+"currentAssetId",
+"sku",
+"countryCode"
+],
+"ProcessData": [
+"pid",
+"uuid"
+],
+"SessionDetails": [
+"sessionId",
+"firstSessionId",
+"sessionIndex",
+"sessionStartTimestampUs"
+],
+"Time": [
+"ms",
+"us",
+"seconds"
+],
+"SessionData": [
+"sessionDetails",
+"backgroundTime",
+"processDataMap"
+],
+"SessionConfigs": [
+"sessionsEnabled",
+"sessionSamplingRate",
+"sessionTimeoutSeconds",
+"cacheDurationSeconds",
+"cacheUpdatedTimeSeconds"
+]
+}

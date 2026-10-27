@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local data and debug dumps
+photos/
+app/debug/
+*.log
+
+# House data: photos, maps, room atlas, and app screenshots
+atlas/
+reference/
+screenshots/
+
+# The official app's APK, decompiled dumps, and built zips
+*.apk
+*.apkm
+*.zip
+
+# Secrets, in case any ever land here (logins live in Windows Credential Manager)
+.env
+*.env
+*.key
+*.pem
+*token*
+*secret*
+credentials*
